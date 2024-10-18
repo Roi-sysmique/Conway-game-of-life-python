@@ -2,16 +2,16 @@ import pygame
 
 pygame.init()
 
-SCREEN_LENGTH = 400
-cell_length = SCREEN_LENGTH/20
-game_env = [0 for _ in range(int(cell_length) + 10) for _ in range(int(cell_length) + 10)]
-for _ in game_env:
-    print(_)
+SCREEN_LENGTH = 600
+cell_length = (SCREEN_LENGTH + 200)/20
+game_env = [[0 for _ in range(int(cell_length))] for _ in range(int(cell_length))]
 SCREEN = pygame.display.set_mode((SCREEN_LENGTH, SCREEN_LENGTH))
 CLOCK = pygame.time.Clock()
 FPS = 300
 setup_mode = True
+setup_mode_fps = 300
 game_mode = False
+game_mode_fps = 10
 click_pos = None
 generations = 0
 
@@ -22,11 +22,11 @@ class Cell(pygame.sprite.Sprite):
         self.row = row
         self.col = col
         self.status = False
-        self.width = len(game_env)
+        self.width = 20
         self.image = pygame.surface.Surface((self.width, self.width))
         self.rect = self.image.get_rect()
-        self.rect.x = self.col * self.width
-        self.rect.y = self.row * self.width
+        self.rect.x = (self.col * self.width) - 100
+        self.rect.y = (self.row * self.width) - 100
         self.image.fill('green')
         self.last_click_pos = None
         self.neighbor_positions = [(-1, 0), (1, 0), (0, -1), (0, 1),
@@ -77,7 +77,7 @@ class Cell(pygame.sprite.Sprite):
             self.image.fill('black')
 
         if setup_mode and type(last_click_pos) == tuple and last_click_pos != self.last_click_pos:
-            FPS = 300
+            FPS = setup_mode_fps
             generations = 0
             self.last_click_pos = last_click_pos
             if self.rect.collidepoint(last_click_pos) and not self.status:
@@ -88,7 +88,7 @@ class Cell(pygame.sprite.Sprite):
                 game_env[self.row][self.col] = 0
 
         elif game_mode:
-            FPS = 10
+            FPS = game_mode_fps
             if not self.status and self.cells_to_check.count(1) == 3:
                 self.status = True
             elif self.status and self.cells_to_check.count(1) < 2 or self.cells_to_check.count(1) > 3:
@@ -97,15 +97,14 @@ class Cell(pygame.sprite.Sprite):
                 self.status = True
 
 
-def lines(surface_width, game_environment):
-    width_square = len(game_environment)
-    for _ in range(width_square, surface_width + 1, width_square):
+def lines(surface_width):
+    width_square = 20
+    for _ in range(width_square, surface_width + 1, 20):
         pygame.draw.line(SCREEN, 'grey', (_, 0), (_, surface_width))
-        pygame.draw.line(SCREEN, 'grey', (0, _), (surface_width, i))
+        pygame.draw.line(SCREEN, 'grey', (0, _), (surface_width, _))
 
 
 cells = pygame.sprite.Group()
-row_num = 0
 
 for row in range(0, len(game_env)):
     for col in range(0, len(game_env)):
@@ -125,6 +124,12 @@ while True:
             elif event.key == pygame.K_ESCAPE:
                 setup_mode = True
                 game_mode = False
+            if game_mode:
+                if event.key == pygame.K_MINUS:
+                    game_mode_fps -= 1
+                elif event.key == pygame.K_PLUS:
+                    game_mode_fps += 1
+
     cells.draw(SCREEN)
     cells.update(click_pos)
     if game_mode:
@@ -134,6 +139,6 @@ while True:
                 game_env[i.row][i.col] = 1
             elif not i.status:
                 game_env[i.row][i.col] = 0
-    lines(SCREEN_LENGTH, game_env)
+    lines(SCREEN_LENGTH)
     pygame.display.update()
     CLOCK.tick(FPS)
