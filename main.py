@@ -124,11 +124,6 @@ while True:
             elif event.key == pygame.K_ESCAPE:
                 setup_mode = True
                 game_mode = False
-            if game_mode:
-                if event.key == pygame.K_MINUS:
-                    game_mode_fps -= 1
-                elif event.key == pygame.K_PLUS:
-                    game_mode_fps += 1
 
     cells.draw(SCREEN)
     cells.update(click_pos)
