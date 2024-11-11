@@ -2,8 +2,9 @@ import pygame
 
 pygame.init()
 
-SCREEN_LENGTH = 600
-cell_length = (SCREEN_LENGTH + 200)/20
+SCREEN_LENGTH = 750
+square_length = 15
+cell_length = (SCREEN_LENGTH + 200)/square_length
 game_env = [[0 for _ in range(int(cell_length))] for _ in range(int(cell_length))]
 SCREEN = pygame.display.set_mode((SCREEN_LENGTH, SCREEN_LENGTH))
 CLOCK = pygame.time.Clock()
@@ -13,7 +14,6 @@ setup_mode_fps = 300
 game_mode = False
 game_mode_fps = 10
 click_pos = None
-generations = 0
 
 
 class Cell(pygame.sprite.Sprite):
@@ -22,12 +22,11 @@ class Cell(pygame.sprite.Sprite):
         self.row = row
         self.col = col
         self.status = False
-        self.width = 20
+        self.width = square_length
         self.image = pygame.surface.Surface((self.width, self.width))
         self.rect = self.image.get_rect()
         self.rect.x = (self.col * self.width) - 100
         self.rect.y = (self.row * self.width) - 100
-        self.image.fill('green')
         self.last_click_pos = None
         self.neighbor_positions = [(-1, 0), (1, 0), (0, -1), (0, 1),
                                    (-1, -1), (-1, 1), (1, -1), (1, 1)]
@@ -64,7 +63,7 @@ class Cell(pygame.sprite.Sprite):
         self.cells_to_check = None
 
     def update(self, last_click_pos):
-        global game_env, FPS, generations
+        global game_env, FPS
 
         self.cells_to_check = []
         for _ in self.neighbor_positions:
@@ -72,13 +71,12 @@ class Cell(pygame.sprite.Sprite):
             new_col = self.col + _[1]
             self.cells_to_check.append(game_env[new_row][new_col])
         if self.status:
-            self.image.fill('white')
+            self.image.fill((50, 50, 50))
         else:
-            self.image.fill('black')
+            self.image.fill((200, 200, 200))
 
         if setup_mode and type(last_click_pos) == tuple and last_click_pos != self.last_click_pos:
             FPS = setup_mode_fps
-            generations = 0
             self.last_click_pos = last_click_pos
             if self.rect.collidepoint(last_click_pos) and not self.status:
                 self.status = True
@@ -91,17 +89,14 @@ class Cell(pygame.sprite.Sprite):
             FPS = game_mode_fps
             if not self.status and self.cells_to_check.count(1) == 3:
                 self.status = True
+                self.image.fill((10, 200, 100))
             elif self.status and self.cells_to_check.count(1) < 2 or self.cells_to_check.count(1) > 3:
                 self.status = False
-            elif self.status and self.cells_to_check.count(1) == 2 or self.cells_to_check.count(1) == 3:
+                self.image.fill((200, 100, 10))
+
+            elif self.status and self.cells_to_check.count(1) >= 2 and self.cells_to_check.count(1) <= 3:
                 self.status = True
-
-
-def lines(surface_width):
-    width_square = 20
-    for _ in range(width_square, surface_width + 1, 20):
-        pygame.draw.line(SCREEN, 'grey', (_, 0), (_, surface_width))
-        pygame.draw.line(SCREEN, 'grey', (0, _), (surface_width, _))
+                self.image.fill((10, 100, 200))
 
 
 cells = pygame.sprite.Group()
@@ -111,12 +106,13 @@ for row in range(0, len(game_env)):
         cell = Cell(row=row, col=col)
         cells.add(cell)
 while True:
+    mouse_keys = pygame.mouse.get_pressed(3)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             quit()
-        if event.type == pygame.MOUSEBUTTONDOWN and setup_mode:
-            click_pos = event.pos
+        if mouse_keys[0] and setup_mode:
+            click_pos = pygame.mouse.get_pos()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 setup_mode = False
@@ -128,12 +124,10 @@ while True:
     cells.draw(SCREEN)
     cells.update(click_pos)
     if game_mode:
-        generations += 1
         for i in cells:
             if i.status:
                 game_env[i.row][i.col] = 1
             elif not i.status:
                 game_env[i.row][i.col] = 0
-    lines(SCREEN_LENGTH)
     pygame.display.update()
     CLOCK.tick(FPS)
